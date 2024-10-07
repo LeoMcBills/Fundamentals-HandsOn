@@ -1,19 +1,25 @@
-# GCC support can be specified at major, minor, or micro version
-# (e.g. 8, 8.2 or 8.2.0).
-# See https://hub.docker.com/r/library/gcc/ for all supported GCC
-# tags from Docker Hub.
-# See https://docs.docker.com/samples/library/gcc/ for more on how to use this image
-FROM gcc:latest
+# For more information, please refer to https://aka.ms/vscode-docker-python
+FROM python:3-slim
 
-# These commands copy your files into the specified directory in the image
-# and set that as the working location
-COPY . /usr/src/myapp
-WORKDIR /usr/src/myapp
+EXPOSE 6379
 
-# This command compiles your app using GCC, adjust for your source code
-RUN g++ -o myapp main.cpp
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# This command runs your application, comment out this line to compile only
-CMD ["./myapp"]
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
 
-LABEL Name=fundamentalshandson Version=0.0.1
+# Install pip requirements
+COPY requirements.txt .
+RUN python -m pip install -r requirements.txt
+
+WORKDIR /app
+COPY . /app
+
+# Creates a non-root user with an explicit UID and adds permission to access the /app folder
+# For more info, please refer to https://aka.ms/vscode-docker-python-configure-containers
+RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /app
+USER appuser
+
+# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
+CMD ["gunicorn", "--bind", "0.0.0.0:6379", "L09-07 Compose V2.app:app"]
